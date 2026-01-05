@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>岩手県EBPM支援ツール</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+        
+        :root {
+            --iwate-navy: #0f172a;
+            --iwate-blue: #1e40af;
+            --iwate-accent: #3b82f6;
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif; 
+            background-color: #f8fafc; 
+            color: var(--iwate-navy);
+            line-height: 1.6;
+        }
+
+        .btn-premium {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-premium:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px -5px rgba(30, 58, 138, 0.3);
+            filter: brightness(1.05);
+        }
+
+        .bullet-list { text-align: left; }
+        .bullet-list li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: inherit;
+            line-height: 1.6;
+        }
+        .bullet-list li::before {
+            content: "•";
+            position: absolute; left: 0; color: #3b82f6; font-weight: 900;
+        }
+
+        .impact-card .bullet-list li::before {
+            color: #60a5fa;
+        }
+
+        .flow-line { position: relative; }
+        .flow-line::after {
+            content: "→"; position: absolute; right: -0.75rem; top: 50%;
+            transform: translateY(-50%); color: #cbd5e1; font-weight: bold; font-size: 1.5rem;
+        }
+        @media (max-width: 1280px) { .flow-line::after { content: "↓"; right: 50%; top: auto; bottom: -1rem; transform: translateX(50%); } }
+
+        .hidden { display: none !important; }
+        .page-fade { animation: slideUp 0.5s ease-out forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .label-badge {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; }
+            .print-full { width: 100% !important; max-width: none !important; padding: 0 !important; margin: 0 !important; }
+            .logic-card { border: 1px solid #ddd !important; break-inside: avoid; }
+            .flow-line::after { content: "" !important; }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- アプリ本体 -->
+    <div id="mainApp">
+        <nav class="h-16 bg-white/80 backdrop-blur-md sticky top-0 z-50 px-6 flex items-center justify-between border-b border-slate-200 no-print">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-900 p-2 rounded-xl shadow-lg shadow-blue-200">
+                    <i data-lucide="award" class="text-white w-5 h-5"></i>
+                </div>
+                <h1 class="font-extrabold text-blue-950 text-lg tracking-tight">岩手県EBPM支援ツール</h1>
+            </div>
+            <div id="navActions" class="hidden flex items-center gap-4">
+                <button onclick="backToInput()" class="text-xs font-bold text-slate-500 hover:text-blue-600 transition-all flex items-center gap-1">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> 最初から
+                </button>
+                <button onclick="window.print()" class="btn-premium text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i> レポート印刷
+                </button>
+            </div>
+        </nav>
+
+        <!-- 入力ステージ -->
+        <div id="inputStage" class="container mx-auto max-w-4xl px-6 py-12 lg:py-20 no-print page-fade">
+            <div class="text-center mb-12 space-y-3">
+                <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">「いわて県民計画」に、確かな根拠を。</h2>
+                <p class="text-slate-500 text-base md:text-lg font-medium">公的統計データに基づき、事業の妥当性と論理構造の整理を支援します。</p>
+            </div>
+
+            <div class="mb-10 text-center space-y-4">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">分析サンプル</p>
+                <div class="flex flex-wrap justify-center gap-2">
+                    <button onclick="loadSample(0)" class="bg-white px-5 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-all shadow-sm">健康支援</button>
+                    <button onclick="loadSample(1)" class="bg-white px-5 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:border-pink-400 hover:text-pink-600 transition-all shadow-sm">子育て</button>
+                    <button onclick="loadSample(2)" class="bg-white px-5 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:border-emerald-400 hover:text-emerald-600 transition-all shadow-sm">UIJ定着</button>
+                    <button onclick="loadSample(3)" class="bg-white px-5 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-all shadow-sm">地域防災</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 md:p-12 rounded-[3.5rem] shadow-2xl border border-slate-100 space-y-10">
+                <div class="space-y-3">
+                    <label class="text-xs font-black text-blue-600 uppercase tracking-widest ml-1">事業名称</label>
+                    <input type="text" id="businessName" placeholder="例：高齢者等のデジタル利活用促進事業" class="w-full text-xl p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl focus:ring-8 focus:ring-blue-500/5 focus:border-blue-500 transition-all outline-none font-bold">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div class="space-y-3">
+                        <label class="text-xs font-black text-blue-600 uppercase tracking-widest ml-1">事業目的（解決したい課題）</label>
+                        <textarea id="businessPurpose" rows="6" placeholder="現状の課題と実現したい姿" class="w-full text-sm p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl focus:ring-8 focus:ring-blue-500/5 transition-all outline-none resize-none leading-relaxed font-medium"></textarea>
+                    </div>
+                    <div class="space-y-3">
+                        <label class="text-xs font-black text-blue-600 uppercase tracking-widest ml-1">具体的な事業内容</label>
+                        <textarea id="businessContent" rows="6" placeholder="何を行うか具体的に記載" class="w-full text-sm p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl focus:ring-8 focus:ring-blue-500/5 transition-all outline-none resize-none leading-relaxed font-medium"></textarea>
+                    </div>
+                </div>
+                <button id="analyzeBtn" onclick="analyze()" class="btn-premium w-full text-white font-black text-xl py-6 rounded-3xl flex items-center justify-center gap-3 active:scale-[0.99] shadow-xl shadow-blue-500/20">
+                    <span>ロジックを構成して指標を抽出</span>
+                    <i data-lucide="zap" class="w-5 h-5 text-yellow-400"></i>
+                </button>
+                <p id="errorMsg" class="hidden text-center text-rose-500 text-xs font-black mt-4 py-3 bg-rose-50 rounded-2xl border border-rose-100">※すべての項目を入力してください</p>
+            </div>
+        </div>
+
+        <!-- 出力ステージ -->
+        <div id="outputStage" class="hidden container mx-auto px-6 py-12 max-w-[1600px] page-fade print-full">
+            <header class="mb-20 border-b border-slate-200 pb-16">
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="px-4 py-1.5 bg-blue-900 text-white rounded-full text-[10px] font-black tracking-widest uppercase">EBPM Logical Analysis Report</span>
+                    <span id="disp-date" class="text-slate-400 font-bold text-[10px] uppercase tracking-widest"></span>
+                </div>
+                <h2 id="disp-businessName" class="text-5xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight mb-10 max-w-5xl"></h2>
+                <div id="summaryText" class="text-2xl text-slate-600 font-medium leading-relaxed italic border-l-8 border-blue-600 pl-10 py-4 bg-blue-50/40 rounded-r-[3rem]"></div>
+            </header>
+
+            <div class="space-y-32">
+                <!-- ロジックモデル -->
+                <section class="space-y-12">
+                    <div class="flex items-center gap-5">
+                        <div class="w-3 h-10 bg-blue-600 rounded-full"></div>
+                        <h3 class="text-4xl font-black text-slate-800 tracking-tight">事業ロジックモデル体系図</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-5 p-2 rounded-[4rem]">
+                        <div id="logic-context" class="flow-line"></div>
+                        <div id="logic-input" class="flow-line"></div>
+                        <div id="logic-activity" class="flow-line"></div>
+                        <div id="logic-output" class="flow-line"></div>
+                        <div id="logic-outcome" class="flow-line"></div>
+                        <div id="logic-impact"></div>
+                    </div>
+                </section>
+
+                <div class="flex justify-center py-10 text-slate-200"><i data-lucide="chevron-down" class="w-16 h-16 animate-bounce"></i></div>
+
+                <!-- KPIセクション -->
+                <section class="space-y-16">
+                    <div class="flex flex-col gap-3">
+                        <div class="flex items-center gap-5">
+                            <div class="w-3 h-10 bg-indigo-600 rounded-full"></div>
+                            <h3 class="text-4xl font-black text-slate-800 tracking-tight text-indigo-950">1. 本事業におけるKPI（案）</h3>
+                        </div>
+                        <p class="text-lg text-slate-500 font-bold ml-8">政府統計(e-Stat)等の客観的指標に基づく現状分析（数値は岩手県の実績値）</p>
+                    </div>
+                    <div id="estatKpiGrid" class="grid grid-cols-1 md:grid-cols-2 gap-10"></div>
+                </section>
+
+                <div class="flex justify-center py-10 text-slate-200"><i data-lucide="chevron-down" class="w-16 h-16"></i></div>
+
+                <!-- 計画指標とのマッチング -->
+                <section class="space-y-16 pb-20">
+                    <div class="flex flex-col gap-3">
+                        <div class="flex items-center gap-5">
+                            <div class="w-3 h-10 bg-emerald-600 rounded-full"></div>
+                            <h3 class="text-4xl font-black text-slate-800 tracking-tight text-emerald-950">2. 計画指標とのマッチング</h3>
+                        </div>
+                        <p class="text-lg text-slate-500 font-bold ml-8">「いわて県民計画（2019～2028）」における位置づけと全関連指標</p>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        <div class="space-y-10">
+                            <div class="flex items-center gap-4 ml-6">
+                                <i data-lucide="target" class="text-emerald-600 w-8 h-8"></i>
+                                <h4 class="text-2xl font-black text-slate-700">具体的方策推進指標（アウトカム）</h4>
+                            </div>
+                            <div id="policyList" class="grid grid-cols-1 gap-8"></div>
+                        </div>
+                        <div class="space-y-10">
+                            <div class="flex items-center gap-4 ml-6">
+                                <i data-lucide="heart" class="text-rose-500 w-8 h-8"></i>
+                                <h4 class="text-2xl font-black text-slate-700">いわて幸福関連指標（最終インパクト）</h4>
+                            </div>
+                            <div id="happinessList" class="grid grid-cols-1 gap-8"></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <footer class="mt-60 pt-16 border-t border-slate-200 text-center no-print">
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-[0.6em]">Iwate EBPM Logic Tool v10.1 - Open Edition</p>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // --- データ定義 ---
+        const SAMPLES = [
+            { name: "高齢者等見守りDX推進事業", purpose: "社会的孤立を防ぎ、デジタル技術で地域の見守り網を再構築することで、一人暮らしの高齢者が安心して健康に暮らし続けられる環境を作る。", content: "地域ボランティアをICTサポーターとして養成。全対象世帯へ見守りデバイスを配布。公民館での健康相談サロンと連動した活動。" },
+            { name: "いわて学習食堂支援プロジェクト", purpose: "共働き世帯の育児負担を軽減し、子供の居場所と学習支援を一体的に提供することで、地域全体で子供を育む機運を高める。", content: "空き店舗を活用した「学習食堂」の開設運営。教員OBによる学習指導と、地元食材を用いた食事提供の実施。" },
+            { name: "若者世代UIJターン定着促進事業", purpose: "県外の若手人材の還流を促進し、深刻な人口減少（社会減）を抑制するとともに、県内産業を支える次世代の人材を確保する。", content: "首都圏での移住コンシェルジュによる相談支援。県内IT企業でのインターンシップと、若者向けリノベ住宅の提供。" },
+            { name: "地域避難ネットワーク構築支援", purpose: "災害激甚化に対応するため、住民同士の「共助」による個別避難計画を策定し、災害時に誰一人取り残さない避難体制を確立する。", content: "防災アドバイザーの派遣。町内会単位での個別避難計画作成ワークショップ。デジタルマップを活用した訓練の実施。" }
+        ];
+
+        const CATEGORIES = [
+            { id: "health", label: "Ⅰ　健康・余暇", kw: ["健康", "医療", "介護", "通院", "健診", "予防", "高齢者"] },
+            { id: "family", label: "Ⅱ　家族・子育て", kw: ["子育て", "子供", "こども", "出産", "育児", "待機児童", "放課後", "食堂"] },
+            { id: "education", label: "Ⅲ　教育", kw: ["教育", "学校", "学習", "学力", "ICT教育", "不登校", "大学", "学生"] },
+            { id: "community", label: "Ⅳ　居住環境・コミュニティ", kw: ["移住", "UIJ", "定着", "空き家", "地域おこし", "公共交通", "バス", "交流"] },
+            { id: "safety", label: "Ⅴ　安全", kw: ["防災", "災害", "避難", "防犯", "消防", "強靭", "インフラ", "事故"] },
+            { id: "work", label: "Ⅵ　仕事・収入", kw: ["仕事", "雇用", "就職", "創業", "中小企業", "DX", "賃金", "労働", "所得"] }
+        ];
+
+        const MASTER_DATA = {
+            health: {
+                logic: { 
+                    context: ["生活習慣病の重症化予防と、独居高齢者の社会的孤立が岩手県の喫緊の課題です。特に過疎地における医療アクセス低下が懸念されています。", "医療資源が限られる中、デジタル技術を融合させた『日常的な見守り』と『緩やかな繋がりの維持』が強く求められています。"], 
+                    input: ["専門知識を持つ保健指導員、地域事情に明るいICTサポーター、活動の継続性を担保する安定予算、高精度見守りデバイス、安定した地域通信基盤"], 
+                    activity: ["ICTサポーターによる個別訪問と操作習熟支援、定期的な『デジタル健康サロン』の開催、バイタルデータの継続的モニタリングとフィードバック"], 
+                    output: ["サービスを導入し日常的に利用する世帯数、サロンへの延べ参加者数、ICTシステムを通じたアラート対応および相談支援件数の実績値"], 
+                    outcome: ["体調不良の早期発見と適切なタイミングでの受診が習慣化し、重症化リスクが低減します。", "他者との日常的な交流が増え、心理的孤立感が解消されることで生活満足度が向上します。"], 
+                    impact: ["岩手県民の健康寿命を延伸し、将来的な一人あたり介護・医療給付費の適正化を実現します。", "最期まで住み慣れた地域で、自らの意思で自立して生活し続けられる強靭な地域社会を構築します。"] 
+                },
+                kpis: [
+                    { name: "高齢者通院率", val: "39.4%", src: "国民生活基礎調査（e-Stat）", logic: "見守りによる早期接触が、適切な医療アクセス（通院）に繋がっているかを客観的に測ります。", url: "https://www.e-stat.go.jp/" },
+                    { name: "特定健診受診率", val: "58.0%", src: "岩手県健康増進課（公的集計）", logic: "健康意識の向上が、予防の入口である健診行動として現れているかを確認します。", url: "https://www.e-stat.go.jp/" }
+                ],
+                happiness: [
+                    { area: "Ⅰ 健康・余暇", name: "健康寿命", cur: "79.95歳", r8: "81.0歳", logic: "【直結ロジック】KPI（受診・健診率）が向上することで、病気の重症化が防がれ、自立した生活期間が延びます。" },
+                    { area: "Ⅰ 健康・余暇", name: "自分の健康状態が良いと思う割合", cur: "32.1%", r8: "35.0%", logic: "【直結ロジック】日常的な見守りと相談を通じ、健康への安心感が得られることで主観的幸福が向上します。" },
+                    { area: "Ⅰ 健康・余暇", name: "余暇生活への満足度", cur: "中", r8: "向上", logic: "【直結ロジック】健康が維持されることで地域活動や趣味への意欲が高まり、生活全体の質が改善されます。" }
+                ],
+                policy: [
+                    { area: "Ⅰ 健康・余暇", strategy: "①生涯を通じた健康づくりの推進", name: "特定健診受診率", cur: "58.0%", r8: "70.0%", logic: "【施策貢献】事業での受診勧奨が、県全体の具体的方策である『予防医療の浸透』に寄与します。" },
+                    { area: "Ⅰ 健康・余暇", strategy: "③がん対策の推進", name: "がん検診受診率（胃がん）", cur: "42.0%", r8: "50.0%", logic: "【施策貢献】受診忘れ防止の働きかけが、致命的な疾患の早期発見体制を強力に押し上げます。" },
+                    { area: "Ⅰ 健康・余暇", strategy: "⑥適切な医療提供体制の確保", name: "在宅医療利用者数", cur: "増加中", r8: "目標値設定", logic: "【施策貢献】地域見守りによる状態把握が、スムーズな在宅医療・介護への移行を支援します。" }
+                ]
+            },
+            family: {
+                logic: { 
+                    context: ["子育て世帯の孤立化と、共働き増加による育児負担が少子化を加速させる要因となっています。", "子供が放課後に安心して過ごせる場所と、地域社会による多世代型支援の充実が不可欠です。"], 
+                    input: ["学習支援員、調理スタッフ、拠点運営予算、地元産食材、地域住民ボランティア"], 
+                    activity: ["学習指導付き子供食堂の定期的運営、保護者向け相談会、地域多世代交流イベントの開催"], 
+                    output: ["延べ利用児童生徒数、提供された栄養バランスの取れた食事数、実施された学習指導の累計時間"], 
+                    outcome: ["子供たちが安心して過ごせる『居場所』が確保され、学習習慣と規則正しい食生活が定着します。", "保護者が育児の悩みを共有し、負担が軽減されることで、子育てへの肯定感が向上します。"], 
+                    impact: ["『岩手なら安心して生み育てられる』という実感が広がり、中長期的な合計特殊出生率の改善に寄与します。", "多世代交流を通じて地域全体に子供を支える文化が醸成され、地域の活力が維持されます。"] 
+                },
+                kpis: [
+                    { name: "合計特殊出生率", val: "1.15", src: "人口動態調査（e-Stat）", logic: "支援環境の改善が、最終的に出生数（行動）に繋がったかを長期的視点で客観的に測ります。", url: "https://www.e-stat.go.jp/" },
+                    { name: "共働き世帯割合", val: "62.4%", src: "就業構造基本調査（e-Stat）", logic: "支援が必要なボリューム層である共働き世帯への到達度とニーズを把握します。", url: "https://www.e-stat.go.jp/" }
+                ],
+                happiness: [
+                    { area: "Ⅱ 家族・子育て", name: "子育ての楽しさを感じる割合", cur: "96.6%", r8: "98.0%", logic: "【直結ロジック】支援が機能することで親の孤立が解消され、育児の楽しさを感じる心のゆとりが生まれます。" },
+                    { area: "Ⅱ 家族・子育て", name: "地域の子育て支援への満足度", cur: "中", r8: "高", logic: "【直結ロジック】身近な居場所での支援実績が、地域社会への信頼感と満足度を直接向上させます。" },
+                    { area: "Ⅱ 家族・子育て", name: "仕事と家庭生活の調和への満足度", cur: "中", r8: "向上", logic: "【直結ロジック】預かり支援や食事支援が機能することで、働きながら育児をする幸福感を最大化します。" }
+                ],
+                policy: [
+                    { area: "Ⅱ 家族・子育て", strategy: "③子育て家庭への支援", name: "学習支援実施市町村数", cur: "27", r8: "33", logic: "【施策貢献】拠点運営モデルが、県内全域での学習支援インフラ整備を加速させます。" },
+                    { area: "Ⅱ 家族・子育て", strategy: "①結婚・妊娠・出産の希望の実現", name: "待機児童数", cur: "0人", r8: "0人維持", logic: "【施策貢献】放課後の受け皿整備が、ライフプランの実現を阻む要因（小1の壁等）を排除します。" },
+                    { area: "Ⅱ 家族・子育て", strategy: "⑥児童虐待防止対策の推進", name: "虐待相談対応件数", cur: "増加傾向", r8: "早期対応強化", logic: "【施策貢献】食堂等での緩やかな見守りが、家庭の異変を早期に察知し重症化を防ぐ基盤となります。" }
+                ]
+            },
+            education: {
+                logic: { 
+                    context: ["デジタル社会への対応能力の差が将来の格差に繋がるリスクが顕在化しています。", "不登校等の課題を抱える児童生徒に対し、ICTを用いた個別に寄り添った学びの提供が急務です。"], 
+                    input: ["高度ICT講師、学習デバイス、教育コンテンツ、地域連携コーディネーター"], 
+                    activity: ["デジタル探究学習、オンライン遠隔支援、プログラミング教室の定期的開催"], 
+                    output: ["プログラム修了者数、デジタル教材利用時間、不登校生徒への個別支援回数"], 
+                    outcome: ["ICTを使いこなす能力が向上し、自ら解決する探究心と自信が醸成されます。", "多様な学び方が認められることで社会との繋がりが維持され、学習意欲が回復します。"], 
+                    impact: ["将来の岩手産業を担うデジタル人材を輩出し、県内企業の競争力を強化します。", "全ての子供が自分の可能性を信じて挑戦できる、不登校等の格差のない社会を実現します。"] 
+                },
+                kpis: [
+                    { name: "不登校児童生徒数", val: "2,487人", src: "学校基本調査（e-Stat）", logic: "柔軟な学びの場が、学校以外の選択肢や復帰の足掛かりとして機能したかを測ります。", url: "https://www.e-stat.go.jp/" },
+                    { name: "ICT活用指導力(教員)", val: "78.5%", src: "教育情報化実態調査（e-Stat）", logic: "環境整備が指導の質的変革に結びついているかを確認する重要指標です。", url: "https://www.e-stat.go.jp/" }
+                ],
+                happiness: [
+                    { area: "Ⅲ 教育", name: "自己肯定感を持つ児童生徒割合", cur: "75.1%", r8: "79.0%", logic: "【直結ロジック】KPI（技能習得等）を通じた『できた』という体験が、子供の自己価値感を直接高めます。" },
+                    { area: "Ⅲ 教育", name: "将来への希望を持つ若者の割合", cur: "低", r8: "向上", logic: "【直結ロジック】技能を手に入れることで、自分の未来への期待感が醸成されます。" },
+                    { area: "Ⅲ 教育", name: "学校生活への満足度", cur: "中", r8: "高", logic: "【直結ロジック】多様な学びの価値が認められることで、一人ひとりの個性に応じた幸福な時代を支えます。" }
+                ],
+                policy: [
+                    { area: "Ⅲ 教育", strategy: "⑥デジタル人材の育成", name: "セミナー受講者数", cur: "500人", r8: "500人以上", logic: "【施策貢献】教育段階での実績が、将来の県内産業を支える人材プールに貢献します。" },
+                    { area: "Ⅲ 教育", strategy: "②確かな学力の育成と定着", name: "全国学力調査正答率", cur: "全国並", r8: "上位", logic: "【施策貢献】ICT活用による個別最適化学習が、学力向上の具体的目標を支えます。" },
+                    { area: "Ⅲ 教育", strategy: "⑭魅力ある県立高校づくりの推進", name: "地域と連携した教育活動数", cur: "増加中", r8: "目標設定", logic: "【施策貢献】外部リソース導入が高校教育の付加価値を高め、進路満足度を向上させます。" }
+                ]
+            },
+            community: {
+                logic: { 
+                    context: ["若年層を中心とした人口流出（社会減）が深刻な課題となっています。", "増大する空き家を移住者の『資源』として捉え直し、地域とマッチングさせる体制が必要です。"], 
+                    input: ["移住コンシェルジュ、空き家改修助成金、お試し居住拠点、地域情報発信チーム"], 
+                    activity: ["移住希望者と地域企業の個別マッチング、空き家バンク運営、暮らし体験イベント"], 
+                    output: ["移住相談受付数、成約・定着世帯数、空き家バンクへの新規登録および成約物件数"], 
+                    outcome: ["関係人口が増え、空き家が再生されることで地域の居住魅力と活力が向上します。", "地域との接点が深まることで移住後の孤立が防がれ、定着率が高まります。"], 
+                    impact: ["転入超過エリアを拡大させ社会減を抑制し、持続可能な岩手の人口動態を構築します。", "多様な人材が参画することで地域独自の文化や産業が活性化し、幸福な社会を実現します。"] 
+                },
+                kpis: [
+                    { name: "社会増減数", val: "▲3,329人", src: "住民基本台帳人口報告（e-Stat）", logic: "移住支援の結果が「人口流入増」という行動として現れているかを客観的に測ります。", url: "https://www.e-stat.go.jp/" },
+                    { name: "空き家率", val: "15.4%", src: "住宅・土地統計調査（e-Stat）", logic: "公的統計に基づき、地域資源が資産として有効に動き始めたかを客観的に評価します。", url: "https://www.e-stat.go.jp/" }
+                ],
+                happiness: [
+                    { area: "Ⅳ 居住・コミュニティ", name: "地域活動参加率", cur: "37.3%", r8: "46.1%", logic: "【直結ロジック】KPIの増大が地域への活気と繋がりを生み、県民の幸福感を醸成します。" },
+                    { area: "Ⅳ 居住・コミュニティ", name: "ふるさとへの愛着を持つ県民の割合", cur: "高", r8: "向上", logic: "【直結ロジック】資源再生（空き家活用等）への参画が、郷土への深い誇りと幸福に結びつきます。" },
+                    { area: "Ⅳ 居住・コミュニティ", name: "地域コミュニティへの満足度", cur: "中", r8: "高", logic: "【直結ロジック】新旧住民の交流が進むことで、孤立のない、住みやすさを実感できる社会を支えます。" }
+                ],
+                policy: [
+                    { area: "Ⅳ 居住・コミュニティ", strategy: "①岩手ファンの拡大と移住・定着", name: "移住相談件数", cur: "8,712", r8: "11,100", logic: "【施策貢献】相談実績が具体的方策である移住定着戦略の成果を直接裏付けます。" },
+                    { area: "Ⅳ 居住・コミュニティ", strategy: "⑤空き家の利活用の促進", name: "空き家バンク成約件数", cur: "低", r8: "向上", logic: "【施策貢献】個別物件のマッチング実績が具体的方策の目標達成を前進させます。" },
+                    { area: "Ⅳ 居住・コミュニティ", strategy: "⑨地域交通の確保と利便性向上", name: "デマンド型交通導入市町村数", cur: "増加中", r8: "全域展開", logic: "【施策貢献】新しい居住形態に対応した移動手段確保が、定着率KPIを物理的に支えます。" }
+                ]
+            },
+            safety: {
+                logic: { 
+                    context: ["災害激甚化に伴い、高齢者等の避難行動を支援する『共助』の体制が不可欠です。", "行政の支援だけでは限界があり、住民同士が助け合う具体的計画（個別計画）が重要です。"], 
+                    input: ["地域防災アドバイザー、計画策定支援ツール、防災用品、デジタルハザードマップ"], 
+                    activity: ["地区単位の避難計画ワークショップ、共助型避難訓練、危険個所の合同点検"], 
+                    output: ["策定完了した個別避難計画の数、訓練への参加住民数、自主防災組織活動数"], 
+                    outcome: ["住民一人が自分の避難行動を具体化し、危機の際でも迅速に行動可能になります。", "要支援者の情報が近隣住民に共有され、地域全体で命を守り抜く相互信頼が生まれます。"], 
+                    impact: ["いかなる災害でも『逃げ遅れゼロ』を実現し、県民の命と財産を守る強靭な岩手を構築します。", "『この地域なら安心・安全に暮らせる』という確信が、平穏な日常生活の幸福を支えます。"] 
+                },
+                kpis: [
+                    { name: "防災対策実施率", val: "83.9%", src: "消防防災・危機管理公的調査", logic: "住民の意識が実際の『具体的な備え（行動）』に現れているかを直接測ります。", url: "https://www.e-stat.go.jp/" },
+                    { name: "刑法犯認知件数", val: "2,772件", src: "犯罪統計（e-Stat）", logic: "コミュニティの結束が防犯効果にも波及しているかを確認する客観的指標です。", url: "https://www.e-stat.go.jp/" }
+                ],
+                happiness: [
+                    { area: "Ⅴ 安全", name: "防災対策実施率", cur: "83.9%", r8: "91.3%", logic: "【直結ロジック】具体的KPI（備え）が向上することで、安心感が日々の幸福の土台となります。" },
+                    { area: "Ⅴ 安全", name: "地域での安全・安心感（主観）", cur: "中", r8: "高", logic: "【直結ロジック】共助ネットワークの可視化により孤独や不安が解消され、幸福感が向上します。" },
+                    { area: "Ⅴ 安全", name: "身近な治安への安心感", cur: "高", r8: "向上", logic: "【直結ロジック】防犯・防災両面での地域力向上が、平穏に暮らせる幸福を最大化します。" }
+                ],
+                policy: [
+                    { area: "Ⅴ 安全", strategy: "④地域コミュニティにおける防災強化", name: "個別避難計画策定市町村数", cur: "22", r8: "33", logic: "【施策貢献】地区単位の計画作成が、全県避難網構築という具体的方策達成を導きます。" },
+                    { area: "Ⅴ 安全", strategy: "②自主的な防犯活動の推進", name: "刑法犯認知件数（県計）", cur: "2,772件", r8: "減少", logic: "【施策貢献】住民同士の見守り活動が、安全な岩手の実現に直接的に貢献します。" },
+                    { area: "Ⅴ 安全", strategy: "⑨インフラの老朽化対策", name: "橋梁・道路の点検率", cur: "100%", r8: "維持管理", logic: "【施策貢献】避難路としての安全確保が、計画の実効性KPIを物理面から支えます。" }
+                ]
+            },
+            work: {
+                logic: { 
+                    context: ["労働力不足の中、県内企業の生産性向上と高付加価値化が賃金アップに不可欠です。", "若者が地元でキャリアを描ける『雇用の質』の改善と、DXによる業務変革が求められています。"], 
+                    input: ["経営診断専門家、DX設備助成金、高度スキル研修予算、企業マッチング基盤"], 
+                    activity: ["ハンズオン型デジタル経営診断、若手社員研修、UIJターン希望者マッチング会"], 
+                    output: ["支援した県内企業数、生産性向上プロジェクト件数、新規に創出された雇用数"], 
+                    outcome: ["企業の付加価値額が増大し、適正な配分による賃金改善と職場環境の向上が実現します。", "従業員がICTで創造的な仕事に従事できるようになり、企業への愛着と意欲が高まります。"], 
+                    impact: ["一人当たり県民所得を向上させ、経済的な豊かさを地域全体に波及させます。", "若者が地元でやりがいのある仕事を見つけ定着するサイクルが回り、地域の成長に貢献します。"] 
+                },
+                kpis: [
+                    { name: "有効求人倍率", val: "1.29倍", src: "職業安定業務統計（e-Stat）", logic: "企業の成長が雇用ニーズ（求人）として現れているかを市場データから客観的に測ります。", url: "https://www.e-stat.go.jp/" },
+                    { name: "1人当たり県民所得", val: "278万円", src: "県民経済計算（e-Stat）", logic: "成果が最終的に個人の豊かさとして還元されたかを確認する最重要指標です。", url: "https://www.e-stat.go.jp/" }
+                ],
+                happiness: [
+                    { area: "Ⅵ 仕事・収入", name: "仕事にやりがいを感じる割合", cur: "76.2%", r8: "79.7%", logic: "【直結ロジック】生産性向上等による質の改善が、従業員の自己実現と幸福に直結します。" },
+                    { area: "Ⅵ 仕事・収入", name: "生活の経済的安定感（主観）", cur: "中", r8: "向上", logic: "【直結ロジック】適正な所得の維持が将来への不安を払い、幸福な生活基盤を強固にします。" },
+                    { area: "Ⅵ 仕事・収入", name: "職場環境への満足度", cur: "中", r8: "向上", logic: "【直結ロジック】働きやすさの改善が、人生の大半を占める働く時間の質を幸福に変えます。" }
+                ],
+                policy: [
+                    { area: "Ⅵ 仕事・収入", strategy: "②産業の活性化と雇用創出", name: "常用雇用増数", cur: "5,000人", r8: "5,500人", logic: "【施策貢献】個別企業の雇用実績が、具体的方策である県全体の雇用拡大を加速させます。" },
+                    { area: "Ⅵ 仕事・収入", strategy: "③中小企業の経営革新・DX推進", name: "DX支援企業数", cur: "低", r8: "向上", logic: "【施策貢献】事業でのデジタル導入が具体的方策である産業構造の高度化を具現化します。" },
+                    { area: "Ⅵ 仕事・収入", strategy: "⑦創業・ベンチャー支援の強化", name: "新規開業率", cur: "低", r8: "向上", logic: "【施策貢献】新しい産業の誕生が、岩手経済に新たな活力をもたらす方策達成を支えます。" }
+                ]
+            }
+        };
+
+        // --- コントロール関数 ---
+        function loadSample(i) {
+            const s = SAMPLES[i];
+            document.getElementById('businessName').value = s.name;
+            document.getElementById('businessPurpose').value = s.purpose;
+            document.getElementById('businessContent').value = s.content;
+            document.getElementById('businessName').focus();
+        }
+
+        function backToInput() {
+            document.getElementById('outputStage').classList.add('hidden');
+            document.getElementById('inputStage').classList.remove('hidden');
+            document.getElementById('navActions').classList.add('hidden');
+            window.scrollTo(0,0);
+        }
+
+        function analyze() {
+            const name = document.getElementById('businessName').value.trim();
+            const purpose = document.getElementById('businessPurpose').value.trim();
+            const content = document.getElementById('businessContent').value.trim();
+
+            if (!name || !purpose || !content) {
+                document.getElementById('errorMsg').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('errorMsg').classList.add('hidden');
+
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('analyzeBtn').innerText = "論理構造を分析中...";
+
+            const allText = (name + purpose + content).toLowerCase();
+            let scores = CATEGORIES.map(c => {
+                let cnt = 0;
+                c.kw.forEach(k => { if(allText.includes(k)) cnt++; });
+                return { id: c.id, cnt };
+            }).sort((a,b) => b.cnt - a.cnt);
+
+            const topCategory = scores[0].cnt > 0 ? scores[0].id : "health";
+            const data = MASTER_DATA[topCategory];
+
+            setTimeout(() => {
+                renderResults(name, topCategory, data);
+                document.getElementById('analyzeBtn').disabled = false;
+                document.getElementById('analyzeBtn').innerHTML = '<span>ロジックを構成して指標を抽出</span><i data-lucide="zap" class="w-5 h-5 text-yellow-400"></i>';
+                lucide.createIcons();
+            }, 1000);
+        }
+
+        function renderResults(name, categoryId, data) {
+            document.getElementById('disp-businessName').textContent = name;
+            document.getElementById('summaryText').textContent = document.getElementById('businessPurpose').value;
+            document.getElementById('disp-date').textContent = new Date().toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'});
+
+            const fillLogic = (id, step, title, items, isDark = false) => {
+                const list = items.map(i => `<li>${i}</li>`).join('');
+                document.getElementById(id).innerHTML = `
+                    <div class="${isDark ? 'impact-card bg-slate-900 text-white shadow-xl border-2 border-blue-500/50' : 'bg-white text-slate-800 border-2 border-slate-200 shadow-sm'} p-8 rounded-[3rem] h-full transition-all">
+                        <span class="text-[11px] font-black ${isDark ? 'text-blue-300' : 'text-slate-400'} uppercase tracking-[0.3em] block mb-4 font-sans">${step}</span>
+                        <h4 class="font-black text-xl mb-6 pb-2 border-b-2 ${isDark ? 'border-blue-800' : 'border-slate-100'}">${title}</h4>
+                        <ul class="bullet-list">${list}</ul>
+                    </div>
+                `;
+            };
+
+            const logic = data.logic;
+            fillLogic('logic-context', "Step 0 / Context", "現状と課題", logic.context);
+            fillLogic('logic-input', "Step 1 / Input", "投入資源", logic.input);
+            fillLogic('logic-activity', "Step 2 / Activity", "主な活動", logic.activity);
+            fillLogic('logic-output', "Step 3 / Output", "直接的出力", logic.output);
+            fillLogic('logic-outcome', "Step 4 / Outcome", "期待される成果", logic.outcome);
+            fillLogic('logic-impact', "Step 5 / Impact", "最終波及効果", logic.impact, true);
+
+            document.getElementById('estatKpiGrid').innerHTML = data.kpis.map(kpi => `
+                <div class="p-12 bg-white border border-slate-200 rounded-[4rem] shadow-sm transition-all hover:border-blue-400">
+                    <span class="text-[10px] font-black bg-indigo-600 text-white px-5 py-2 rounded-full tracking-widest uppercase mb-8 inline-block font-sans">KPI / Evidence</span>
+                    <h4 class="font-black text-slate-800 text-3xl mb-6 tracking-tight">${kpi.name}</h4>
+                    <div class="flex items-baseline gap-3 mb-10">
+                        <span class="text-xs text-slate-400 font-bold uppercase tracking-widest">岩手県 現状値:</span>
+                        <span class="text-6xl font-black text-indigo-600 tracking-tighter">${kpi.val}</span>
+                    </div>
+                    <div class="space-y-6 border-t border-slate-100 pt-8">
+                        <p class="text-[11px] text-slate-400 font-black uppercase flex items-center gap-2">
+                            <i data-lucide="database" class="w-3 h-3"></i> 出典: ${kpi.src}
+                        </p>
+                        <p class="text-base text-slate-600 font-bold border-l-8 border-indigo-200 pl-6 py-2 leading-relaxed">選定理由：${kpi.logic}</p>
+                        <a href="${kpi.url}" target="_blank" class="no-print w-full bg-slate-50 text-indigo-600 py-4 rounded-2xl text-xs font-black flex items-center justify-center gap-2 border border-indigo-100 transition-all hover:bg-indigo-50 mt-4">
+                            <i data-lucide="external-link" class="w-4 h-4"></i> e-Stat詳細
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('happinessList').innerHTML = data.happiness.map(idx => `
+                <div class="p-10 bg-white border border-slate-200 rounded-[4rem] shadow-sm border-t-[12px] border-t-rose-400 transition-all hover:shadow-xl">
+                    <div class="flex justify-between items-center mb-8">
+                        <span class="label-badge bg-rose-50 text-rose-600 border border-rose-100 font-sans tracking-tight">いわて幸福関連指標</span>
+                        <div class="flex gap-2 text-[10px] font-black">
+                            <span class="bg-slate-100 px-4 py-2 rounded-xl">現状: ${idx.cur}</span>
+                            <span class="bg-rose-600 px-4 py-2 rounded-xl text-white font-sans">目標: ${idx.r8}</span>
+                        </div>
+                    </div>
+                    <h4 class="text-3xl font-black text-slate-900 mb-8 tracking-tighter font-sans">${idx.name}</h4>
+                    <div class="bg-rose-50/50 p-8 rounded-[2.5rem] relative overflow-hidden">
+                        <div class="absolute left-0 top-0 h-full w-2 bg-rose-400"></div>
+                        <p class="text-[15px] text-rose-950 leading-relaxed font-bold">${idx.logic}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('policyList').innerHTML = data.policy.map(idx => `
+                <div class="p-10 bg-white border border-slate-200 rounded-[4rem] shadow-sm border-l-[20px] border-l-emerald-500 transition-all hover:shadow-xl">
+                    <div class="flex flex-col gap-2 mb-8">
+                        <span class="label-badge bg-emerald-50 text-emerald-600 border border-emerald-100 w-fit font-sans tracking-tight uppercase">Strategy Index</span>
+                        <div class="text-[11px] text-slate-400 font-bold mt-2 font-sans leading-tight">具体的方策：${idx.strategy}</div>
+                    </div>
+                    <h4 class="text-3xl font-black text-slate-900 mb-8 tracking-tighter font-sans">${idx.name}</h4>
+                    <div class="bg-emerald-50/50 p-8 rounded-[2.5rem] relative overflow-hidden">
+                        <div class="absolute left-0 top-0 h-full w-2 bg-emerald-400"></div>
+                        <p class="text-[14px] text-emerald-950 leading-relaxed font-bold">${idx.logic}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('inputStage').classList.add('hidden');
+            document.getElementById('outputStage').classList.remove('hidden');
+            document.getElementById('navActions').classList.remove('hidden');
+            window.scrollTo(0,0);
+        }
+
+        // 初期化
+        window.onload = () => {
+            lucide.createIcons();
+        };
+    </script>
+</body>
+</html>
